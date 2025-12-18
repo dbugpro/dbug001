@@ -7,8 +7,21 @@ An advanced, AI-powered file orchestration and formatting workbench built with R
 - **Agentic Orchestration**: Uses `gemini-3-pro-preview` for deep reasoning and function calling.
 - **Structural Analysis**: Automatically detects file signatures, magic numbers, and summarizes content.
 - **Template Formatting**: Transforms raw data into clean JSON, CSV, Markdown, or custom text formats.
+- **DDBC Conversion**: Implements the `DDBC_ConvertHelper.py` logic for bit-expansion (0->01, 1->10).
 - **Responsive Terminal**: Industrial-cyberpunk UI that works on both desktop and mobile devices.
 - **Privacy First**: Files are processed in-memory and sent directly to the Gemini API.
+
+## 📚 Knowledge Base: BUG BASE CODE BOOK
+
+The application includes an internal reference file: `bbc_book_glossary_version_0.0.1.json`.
+
+### Purpose
+This JSON glossary serves as the authoritative source of truth for the **BUG BASE** ecosystem. It defines:
+- **Acronyms**: Clear definitions for terms like DDB, DDBC, and ORCHESTRATION.
+- **Operational Logic**: Detailed explanations of algorithms, such as the **Double Digit Binary Code (DDBC)** expansion mapping.
+- **System Hierarchy**: Documentation for the 222-node manifest and role-assumption protocols (BUG SWITCH).
+
+The agent (`dbug001`) utilizes this glossary via the `PRTCL_VIEW_GLOSSARY` tool to provide accurate context and guidance to the user during data sessions.
 
 ## 🛠️ Tech Stack
 
@@ -25,7 +38,7 @@ An advanced, AI-powered file orchestration and formatting workbench built with R
 Use this project as a template for your own AI agent tools.
 ```bash
 git clone https://github.com/your-username/dbug-agent-workbench.git
-cd dbug-agent-workbench
+cd dbug-agent-workbench.git
 ```
 
 ### 2. Configure Your API Key
@@ -62,7 +75,8 @@ The fastest way to deploy your own version of **dbug001** is using Vercel.
 1. **Mount a File**: Click the "Mount New File" button in the Workbench pane to load data into the agent's context.
 2. **Structural Analysis**: Type `Analyze this file` or `What is this?` in the terminal. The agent will use the `perform_structural_analysis` tool.
 3. **Formatting**: Type `Format this as JSON` or `Convert to CSV`. The agent will invoke the `apply_formatting_template` tool and provide a download link.
-4. **Mobile Navigation**: On small screens, use the bottom navigation bar to switch between the Terminal (Chat) and the Workbench view.
+4. **Glossary Access**: Use the DBUG Tool Set or type `Show me the glossary` to view the `bbc_book_glossary_version_0.0.1.json` contents.
+5. **Mobile Navigation**: On small screens, use the bottom navigation bar to switch between the Terminal (Chat) and the Workbench view.
 
 ---
 
@@ -71,6 +85,7 @@ The fastest way to deploy your own version of **dbug001** is using Vercel.
 You can modify the agent's behavior by editing:
 - `constants.ts`: Change the `SYSTEM_PROMPT` to give the agent a different personality or specialization.
 - `App.tsx`: Add more `FunctionDeclaration` objects to the `tools` array to give the agent new capabilities (e.g., image generation, web search).
+- `bbc_book_glossary_version_0.0.1.json`: Update system definitions and logic protocols.
 
 ---
 
