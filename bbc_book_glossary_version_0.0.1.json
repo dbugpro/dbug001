@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "title": "BUG BASE CODE BOOK GLOSSARY",
+    "version": "0.0.1",
+    "author": "dbug-orchestrator",
+    "last_updated": "2025-05-24"
+  },
+  "glossary": {
+    "DDBC": {
+      "full_name": "Double Digit Binary Code",
+      "definition": "A deterministic bit-expansion algorithm used for high-reliability data transmission in the DDB protocol layer.",
+      "logic": "The algorithm processes input as a raw bitstream. Each bit is transformed into a two-bit sequence: '0' becomes '01' (Low-High) and '1' becomes '10' (High-Low). The resulting bitstream is then padded with trailing '0' bits to align with the nearest 8-bit byte boundary.",
+      "python_reference": "DDBC_ConvertHelper.py",
+      "operations": [
+        "READ_RAW_BYTES",
+        "EXTRACT_BITSTRING",
+        "APPLY_EXPANSION_MAP",
+        "ALIGN_BYTE_BOUNDARY",
+        "WRITE_BINARY_STREAM"
+      ]
+    },
+    "DDB": {
+      "full_name": "Double Digit Binary",
+      "definition": "The standard physical-logical signaling layer within BUG BASE environments for error-resistant transmission."
+    },
+    "BUG_SWITCH": {
+      "full_name": "Role Assumption Toggle",
+      "definition": "A software-defined switch that allows a primary DBUG agent to bypass standard hierarchy and assume the role/ID of a sub-node.",
+      "logic": "When ON, commands are processed through the 'Possessed' node context. When OFF, the agent operates in primary -youme mode."
+    },
+    "ORCHESTRATION": {
+      "full_name": "Multi-Node Synchronization",
+      "definition": "The active process of managing 222 heterogeneous nodes (Human, Agent, Moderator, Guest, Family-series) in a unified command context.",
+      "node_count": 222
+    },
+    "MANIFEST": {
+      "full_name": "Node Directory",
+      "definition": "The master index of all IDs (*0-99, -0-99, -youme, -meyou) currently linked to the BUG BASE mainframe."
+    }
+  }
+}

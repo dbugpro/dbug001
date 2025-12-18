@@ -56,29 +56,29 @@ const App: React.FC = () => {
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-    // Convert bytes to bit string
+    // 1. Convert bytes to bit string
     let bitString = '';
     for (const byte of bytes) {
       bitString += byte.toString(2).padStart(8, '0');
     }
 
-    // Apply DDBC conversion logic
+    // 2. Apply DDBC conversion logic (0 -> 01, 1 -> 10)
     let convertedBits = '';
     for (const bit of bitString) {
       convertedBits += bit === '0' ? '01' : '10';
     }
 
-    // Pad to full bytes with '0'
+    // 3. Pad to full bytes with '0'
     const paddingCount = (8 - (convertedBits.length % 8)) % 8;
     convertedBits += '0'.repeat(paddingCount);
 
-    // Convert bit string back to bytes
+    // 4. Convert bit string back to bytes
     const resultBytes = new Uint8Array(convertedBits.length / 8);
     for (let i = 0; i < convertedBits.length; i += 8) {
       resultBytes[i / 8] = parseInt(convertedBits.slice(i, i + 8), 2);
     }
 
-    // Convert result back to base64
+    // 5. Convert result back to base64
     let binaryStr = '';
     for (let i = 0; i < resultBytes.length; i++) {
       binaryStr += String.fromCharCode(resultBytes[i]);
@@ -105,7 +105,7 @@ const App: React.FC = () => {
       setHexDump(null);
       
       addMessage('SYSTEM', `File mounted: ${uploadedFile.name} (${(uploadedFile.size / 1024).toFixed(2)} KB)`);
-      addMessage('AGENT', `Data stream stabilized. I have initialized the **DBUG Tool Set**. \n\nI recommend starting with the **Hex Editor** sub-routine to verify raw byte offsets. Alternatively, if this is for DDB transmission, you should run the **DDBC Convert** tool (DDBC_ConvertHelper.py). How shall we proceed?`);
+      addMessage('AGENT', `Data stream stabilized. My sub-routines are ready. \n\nI recommend starting with the **Hex Editor** (PRTCL_HEX_EDITOR) to inspect the raw byte offsets and confirm structural alignment. \n\nAlternatively, you can access the DBUG Tool Set and select a script like **DDBC_ConvertHelper.py** if you require bit-expansion. How shall we proceed?`);
       
       if (window.innerWidth < 768) {
         setActiveTab('workbench');
@@ -184,6 +184,28 @@ const App: React.FC = () => {
       }
     };
 
+    const exportRawTool: FunctionDeclaration = {
+      name: 'export_raw_binary',
+      description: 'Exports the original raw binary data of the uploaded file.',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          confirm: { type: Type.BOOLEAN, description: 'Confirm raw export.' }
+        }
+      }
+    };
+
+    const glossaryTool: FunctionDeclaration = {
+      name: 'view_glossary',
+      description: 'Displays the BUG BASE CODE BOOK GLOSSARY (bbc_book_glossary_version_0.0.1.json).',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          confirm: { type: Type.BOOLEAN, description: 'Confirm glossary view.' }
+        }
+      }
+    };
+
     try {
       const parts: any[] = [{ text: prompt }];
       if (file) {
@@ -201,7 +223,7 @@ const App: React.FC = () => {
           contents: { parts },
           config: {
             systemInstruction: SYSTEM_PROMPT,
-            tools: [{ functionDeclarations: [analyzeTool, formatTool, hexTool, ddbcTool] }]
+            tools: [{ functionDeclarations: [analyzeTool, formatTool, hexTool, ddbcTool, exportRawTool, glossaryTool] }]
           }
         }),
         new Promise<never>((_, reject) => {
@@ -246,7 +268,30 @@ const App: React.FC = () => {
                 fileName: 'DDBC_ConvertedFile.bin',
                 binaryData: convertedBase64
               });
-              addMessage('AGENT', `DDBC Conversion successful. The bit-expanded binary stream is ready. You can download **DDBC_ConvertedFile.bin** from the Workbench.`);
+              addMessage('AGENT', `DDBC Conversion successful. The bit-expanded binary stream has been generated according to the DDBC_ConvertHelper.py specification. You can download the output file from the Workbench.`);
+            }
+          } else if (call.name === 'export_raw_binary') {
+            if (file) {
+              setFormatResult({
+                content: `RAW_EXPORT: Original binary data extracted.\n- Name: ${file.name}\n- Size: ${file.size} bytes\n- Type: ${file.type}`,
+                format: 'RAW',
+                fileName: `raw_${file.name}`,
+                binaryData: file.base64
+              });
+              addMessage('AGENT', `Raw export sub-routine complete. The original unmodified data stream is now available for download in the Workbench.`);
+            }
+          } else if (call.name === 'view_glossary') {
+            try {
+              const glossaryResp = await fetch('./bbc_book_glossary_version_0.0.1.json');
+              const glossaryData = await glossaryResp.json();
+              setFormatResult({
+                content: JSON.stringify(glossaryData, null, 2),
+                format: 'JSON',
+                fileName: 'bbc_book_glossary_version_0.0.1.json'
+              });
+              addMessage('AGENT', `Glossary sub-routine loaded. The 'BUG BASE CODE BOOK GLOSSARY' (v0.0.1) is now visible in the Workbench.`);
+            } catch (e) {
+              addMessage('SYSTEM', `ERROR: Failed to fetch glossary data stream.`);
             }
           }
         }
@@ -267,7 +312,7 @@ const App: React.FC = () => {
 
   const runTool = (toolName: string, promptOverride?: string) => {
     setShowToolSet(false);
-    if (!file) {
+    if (!file && toolName !== 'view_glossary') {
       addMessage('SYSTEM', 'ERROR: No file mounted. Please mount a data stream first.');
       return;
     }
@@ -278,7 +323,7 @@ const App: React.FC = () => {
     if (!formatResult) return;
     
     let blob: Blob;
-    if (formatResult.format === 'BIN' && formatResult.binaryData) {
+    if ((formatResult.format === 'BIN' || formatResult.format === 'RAW') && formatResult.binaryData) {
       const binaryString = atob(formatResult.binaryData);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -450,7 +495,7 @@ const App: React.FC = () => {
         {formatResult && (
           <div className="flex-1 bg-black border border-cyan-900/30 rounded-lg flex flex-col animate-slide-up min-h-[300px]">
             <div className="p-3 border-b border-cyan-900/30 flex justify-between items-center bg-cyan-950/10 shrink-0">
-              <span className="text-[9px] md:text-[10px] font-bold text-cyan-400">OUTPUT // {formatResult.format === 'BIN' ? 'BINARY_STREAM (DDBC)' : `FORMATted_${formatResult.format}`}</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-cyan-400">OUTPUT // {formatResult.format === 'BIN' ? 'BINARY_STREAM (DDBC)' : formatResult.format === 'RAW' ? 'RAW_EXPORT' : `FORMATted_${formatResult.format}`}</span>
               <button 
                 onClick={handleDownload}
                 className="text-[9px] md:text-[10px] bg-cyan-600 hover:bg-cyan-500 text-black px-3 py-1.5 rounded font-bold uppercase transition-colors active:scale-95"
@@ -482,6 +527,25 @@ const App: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-cyan-900">
               
+              {/* Tool: View Glossary */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full shadow-[0_0_5px_rgba(234,179,8,0.5)]"></div>
+                    <h3 className="text-white font-bold text-xs uppercase tracking-wider">PRTCL_VIEW_GLOSSARY</h3>
+                  </div>
+                  <button 
+                    onClick={() => runTool('view_glossary', 'Display the BUG BASE CODE BOOK glossary')}
+                    className="text-[9px] bg-yellow-900/30 text-yellow-400 border border-yellow-800 px-3 py-1 rounded hover:bg-yellow-600 hover:text-black transition-all font-bold uppercase"
+                  >
+                    View Glossary
+                  </button>
+                </div>
+                <div className="bg-black/40 border border-slate-800 p-4 rounded text-xs text-slate-400 leading-relaxed space-y-2">
+                  <p><span className="text-yellow-600 font-bold">DESC:</span> Displays the official BUG BASE CODE BOOK glossary (bbc_book_glossary_version_0.0.1.json). Contains acronyms and logic definitions.</p>
+                </div>
+              </div>
+
               {/* Tool: Hex Editor */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -501,6 +565,25 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              {/* Tool: RAW Export */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
+                    <h3 className="text-white font-bold text-xs uppercase tracking-wider">PRTCL_RAW_EXPORT</h3>
+                  </div>
+                  <button 
+                    onClick={() => runTool('export_raw_binary', 'Export the original raw binary data')}
+                    className="text-[9px] bg-cyan-900/30 text-cyan-400 border border-cyan-800 px-3 py-1 rounded hover:bg-cyan-600 hover:text-black transition-all font-bold uppercase"
+                  >
+                    Run Sub-routine
+                  </button>
+                </div>
+                <div className="bg-black/40 border border-slate-800 p-4 rounded text-xs text-slate-400 leading-relaxed space-y-2">
+                  <p><span className="text-cyan-600 font-bold">DESC:</span> Extracts and serves the original input buffer without any transformations. Useful for recovery or validation.</p>
+                </div>
+              </div>
+
               {/* Tool: DDBC Convert */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -516,7 +599,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
                 <div className="bg-black/40 border border-slate-800 p-4 rounded text-xs text-slate-400 leading-relaxed space-y-2">
-                  <p><span className="text-cyan-600 font-bold">DESC:</span> DDBC_ConvertHelper.py logic. Bit-expansion utility for DDB transmission. Transforms bits (0->01, 1->10) and pads to full bytes.</p>
+                  <p><span className="text-cyan-600 font-bold">DESC:</span> DDBC_ConvertHelper.py script. Bit-expansion utility for DDB transmission. Transforms bits (0->01, 1->10) and pads to full bytes.</p>
                 </div>
               </div>
 
