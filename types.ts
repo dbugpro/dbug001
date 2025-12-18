@@ -1,4 +1,3 @@
-
 export type AccountRole = 'AGENT' | 'USER' | 'SYSTEM';
 
 // Fix: Added KeyType used by GameScreen and GameButton components to resolve import errors
@@ -30,4 +29,5 @@ export interface FormattingResult {
   content: string;
   format: string;
   fileName: string;
+  binaryData?: string; // Optional field for raw binary results in base64
 }
