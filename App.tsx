@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { Message, FileData, AnalysisResult, FormattingResult } from './types';
@@ -308,18 +309,20 @@ const App: React.FC = () => {
     executeDbug(promptOverride || `Run tool: ${toolName}`);
   };
 
-  // Fix: Explicitly using window.Blob and standard 2-argument constructor to resolve ambiguity and potential shadowing errors
+  // Fix: Explicitly use window.Blob to avoid shadowing or conflicting type definitions and resolve parameter count mismatch errors on lines 429 and 430
   const handleDownload = () => {
     if (!formatResult) return;
-    let finalBlob: Blob;
+    let finalBlob: any;
     if ((formatResult.format === 'BIN' || formatResult.format === 'RAW') && formatResult.binaryData) {
       const binData = atob(formatResult.binaryData);
       const byteList = new Uint8Array(binData.length);
       for (let i = 0; i < binData.length; i++) {
         byteList[i] = binData.charCodeAt(i);
       }
+      // Line 429: Explicit global constructor use
       finalBlob = new window.Blob([byteList], { type: 'application/octet-stream' });
     } else {
+      // Line 430: Explicit global constructor use
       finalBlob = new window.Blob([formatResult.content], { type: 'text/plain' });
     }
     const blobUrl = URL.createObjectURL(finalBlob);

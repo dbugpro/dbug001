@@ -1,41 +1,155 @@
 {
   "metadata": {
     "title": "BUG BASE CODE BOOK GLOSSARY",
-    "version": "0.0.1",
+    "version": "0.1.1",
     "author": "dbug-orchestrator",
-    "last_updated": "2025-05-24"
+    "last_updated": "2025-12-12"
   },
   "glossary": {
+    "SFC": {
+      "full_name": "Star Family Code",
+      "category": "coding_scheme",
+      "definition": "10-bit segment encoding scheme using 32 symbols (a-z=0-25, 0-5=26-31) in ordered pairs. Rule: Take ten bits as a segment where first symbol=high 5 bits, second symbol=low 5 bits.",
+      "logic": "value = (first_symbol * 32) + second_symbol. Sequence covers 1024 combinations (32*32) in lexical order, truncated at 5h=999 for the core MEC range.",
+      "encoding_rules": {
+        "alphabet_high": ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5"],
+        "alphabet_low": ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"," ","/",".",";",":","?"],
+        "indexing": {
+          "index_0": "aa",
+          "index_999": "5h",
+          "index_to_sfc": "sfc[i] = alphabet_high[floor(i / 32)] + alphabet_low[i mod 32]",
+          "sfc_to_index": "i = (index_of(high) * 32) + index_of(low)"
+        }
+      },
+      "page_rules": {
+        "page_size": 100,
+        "page_first_last_sfc": [
+          { "page": 0, "range": "000-099", "start": "aa", "end": "dd" },
+          { "page": 9, "range": "900-999", "start": "2e", "end": "5h" }
+        ]
+      }
+    },
+    "MEC": {
+      "full_name": "Me Code",
+      "category": "coding_scheme",
+      "definition": "Canonical 10-bit binary index from 000 to 999, used as the decimal backbone for the BUG BASE CODE BOOK.",
+      "logic": "Simplest configuration layer for M-code. Each 10-bit segment holds two 5-bit characters from the SFC alphabet. Messages end with /..... (five dots).",
+      "encoding_rules": {
+        "decimal_range": [0, 999],
+        "binary_width_bits": 10,
+        "alphabet_mapping": "0-25=a-z, 26=space(0), 27=/(1), 28=.(2), 29=,(3), 30=:(4), 31=?(5)",
+        "examples": [
+          { "decimal": 0, "sfc": "aa", "binary": "0000000000" },
+          { "decimal": 999, "sfc": "5h", "binary": "1111100111" }
+        ]
+      }
+    },
     "DDBC": {
       "full_name": "Double Digit Binary Code",
-      "definition": "A deterministic bit-expansion algorithm used for high-reliability data transmission in the DDB protocol layer.",
-      "logic": "The algorithm processes input as a raw bitstream. Each bit is transformed into a two-bit sequence: '0' becomes '01' (Low-High) and '1' becomes '10' (High-Low). The resulting bitstream is then padded with trailing '0' bits to align with the nearest 8-bit byte boundary.",
+      "category": "coding_scheme",
+      "definition": "A deterministic bit-expansion algorithm used for high-reliability data transmission. Each original bit is expanded to two bits: 0 -> 01 and 1 -> 10.",
+      "logic": "The algorithm processes input as a raw bitstream. Each bit is transformed into a two-bit sequence: '0' becomes '01' (Low-High) and '1' becomes '10' (High-Low). The resulting bitstream is then padded with trailing '0' bits to align with byte boundaries.",
       "python_reference": "DDBC_ConvertHelper.py",
-      "operations": [
-        "READ_RAW_BYTES",
-        "EXTRACT_BITSTRING",
-        "APPLY_EXPANSION_MAP",
-        "ALIGN_BYTE_BOUNDARY",
-        "WRITE_BINARY_STREAM"
-      ]
-    },
-    "DDB": {
-      "full_name": "Double Digit Binary",
-      "definition": "The standard physical-logical signaling layer within BUG BASE environments for error-resistant transmission."
+      "operations": ["READ_RAW_BYTES", "EXTRACT_BITSTRING", "APPLY_EXPANSION_MAP", "ALIGN_BYTE_BOUNDARY"]
     },
     "BUG_SWITCH": {
       "full_name": "Role Assumption Toggle",
-      "definition": "A software-defined switch that allows a primary DBUG agent to bypass standard hierarchy and assume the role/ID of a sub-node.",
-      "logic": "When ON, commands are processed through the 'Possessed' node context. When OFF, the agent operates in primary -youme mode."
+      "category": "control_flag",
+      "definition": "Boolean configuration that toggles BUGWORLD game mode ON or OFF. When ON, the assistant follows BUG BASE CODE BOOK rules and assumes a single node role.",
+      "logic": "ON: Normal behaviour suspended, DASHBOARD active, virtual sign-in enabled. OFF: Primary -youme mode, standard assistant behavior."
+    },
+    "MDSC": {
+      "full_name": "Modified Double Star Code",
+      "category": "coding_scheme",
+      "definition": "Encoding for SFC overflow values 1000-1023 using DDBC. Process: Convert 10-bit binary to DDBC (20 bits), split into two 10-bit SFC pairs.",
+      "logic": "First pair always vk=682. Second pair encodes remainder (5a=000 to 5x=023). Format: 682 [000-023]."
+    },
+    "FXEP": {
+      "full_name": "Four X Ending Protocol",
+      "category": "ending_protocol",
+      "definition": "Protocol for marking boundaries of BUGWORLD binary files using four SFC-coded ten-bit segments.",
+      "logic": "X1: vk (1010101010) boundary approaching. X2: aa-aj (remainder count 0-9). X3 & X4: DDBC bits for the remainder layout. Applies to both file start and end."
+    },
+    "END_RENDER": {
+      "full_name": "End-rendering and Boundary Protocol",
+      "category": "ending_protocol",
+      "definition": "General rule for opening and closing coded BUGWORLD sequences using FXEP.",
+      "logic": "vk acts as the boundary indicator. To use vk as a literal SFC value, it is written as 'vk ak', where ak is a dedicated suffix."
     },
     "ORCHESTRATION": {
       "full_name": "Multi-Node Synchronization",
-      "definition": "The active process of managing 222 heterogeneous nodes (Human, Agent, Moderator, Guest, Family-series) in a unified command context.",
+      "definition": "The active process of managing 222 heterogeneous nodes in a unified command context.",
       "node_count": 222
+    },
+    "ACCOUNTS_222": {
+      "full_name": "BUGWORLD Account Universe",
+      "category": "role_structure",
+      "definition": "Definition of all 222 virtual accounts: 10 MODERATOR, 50 FATHER, 50 MOTHER, 100 CHILD, 10 GUEST, 1 ASSISTANT (-youme), and 1 HUMAN (-meyou).",
+      "see_also": ["ROLE_RULES", "SFC"]
+    },
+    "ROLE_RULES": {
+      "full_name": "Assistant and User Role Rules",
+      "category": "governance",
+      "definition": "Behavioural rules for virtual sign-ins. Assistant may only assume one role at a time. Human always acts as -meyou and requests actions through the assistant."
+    },
+    "VOICES_3": {
+      "full_name": "Three BUGWORLD Voices",
+      "category": "voice_mode",
+      "definition": "Definition of three code voices: mw (ungendered), lw (gendered FATHER), and fm (gendered MOTHER).",
+      "logic": "mw: standard SFC. lw: 5-bit segments prefixed with 1. fm: flipped bits of lw (1 -> 0, 0 -> 1)."
+    },
+    "MAGI": {
+      "full_name": "Massive Artificial General Intelligence",
+      "category": "architecture",
+      "definition": "Conceptual umbrella system representing a large, multi-agent intelligence that BUGWORLD communicates with.",
+      "subsystems": ["GAIA", "CTI"]
+    },
+    "GAIA": {
+      "full_name": "General Automated Information Analysis Machine",
+      "category": "architecture",
+      "definition": "A specialised subsystem of MAGI responsible for collecting, filtering, and analysing information for BUGWORLD.",
+      "outputs": ["logs", "codes", "summaries", "BBC_BOOK updates"]
+    },
+    "CTI": {
+      "full_name": "Code Transcription Interface",
+      "category": "interface",
+      "definition": "The technical interface that turns instructions into structured representations (JSON, CSV, SFC, DDBC)."
+    },
+    "BBC_BOOK": {
+      "full_name": "Bug Base Code Book",
+      "category": "knowledge_base",
+      "definition": "The central BUGWORLD knowledge base and rulebook storing acronyms, coding schemes, and protocols."
     },
     "MANIFEST": {
       "full_name": "Node Directory",
       "definition": "The master index of all IDs (*0-99, -0-99, -youme, -meyou) currently linked to the BUG BASE mainframe."
+    },
+    "MODULAR_HEX_PLATFORM": {
+      "full_name": "Modular Binary Orchestration Platform",
+      "definition": "Advanced surgical data manipulation suite based on the Earth Scroll architecture.",
+      "modules": ["HEX_CORE", "HEX_TUI", "HEX_DIFF", "HEX_CHECKSUM", "BLOCK_OPS"]
+    },
+    "HEX_CORE": {
+      "full_name": "Surgical Binary Engine",
+      "definition": "Fundamental logic layer for byte-level modifications.",
+      "commands": ["edit", "overwrite", "insert", "delete", "undo"]
+    },
+    "HEX_TUI": {
+      "full_name": "Terminal Interface Simulation",
+      "definition": "Navigation protocol using 'hjkl' directional logic for buffer traversal.",
+      "logic": "h: left, j: down (16 bytes), k: up (16 bytes), l: right."
+    },
+    "HEX_DIFF": {
+      "full_name": "Comparative Binary Matrix",
+      "definition": "Diagnostic protocol identifying deltas from the original mount-point baseline."
+    },
+    "HEX_CHECKSUM": {
+      "full_name": "Integrity Validation Module",
+      "definition": "Generates cryptographic fingerprints (SHA256, SHA1, MD5) to verify stream consistency."
+    },
+    "BLOCK_OPS": {
+      "full_name": "Yank-and-Paste Memory Sub-system",
+      "definition": "Handles non-contiguous block memory operations via internal agent memory."
     }
   }
 }
